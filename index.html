@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FreeFitness - Academia Ao Ar Livre</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.19.0/dist/umd/supabase.min.js"></script>
+
+  <style>
+    /* ==========================
+       Variables & Reset
+       ========================== */
+    :root{
+      --primary: #0153ff;
+      --secondary: #021fb8;
+      --accent: #5ea9e2;
+      --bg-dark: #04050c;
+      --bg-mid: #071026;
+      --text: #f8f9fa;
+      --muted: #9aa3ad;
+      --glass: rgba(255,255,255,0.03);
+      --site-max: 1200px;
+      --video-max: 1200px;
+      --radius-xl: 20px;
+      --radius-md: 12px;
+      --card-shadow: 0 16px 50px rgba(0,0,0,0.5);
+      --ease: cubic-bezier(.2,.9,.3,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg-dark);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* Updated gradient spots with #0046c4 to #000826 */
+    body::before{
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(600px 400px at 10% 10%, rgba(0,70,196,0.15), transparent 18%),
+        radial-gradient(700px 500px at 90% 15%, rgba(0,70,196,0.12), transparent 16%),
+        radial-gradient(500px 500px at 30% 80%, rgba(0,70,196,0.1), transparent 20%),
+        radial-gradient(600px 600px at 70% 70%, rgba(0,70,196,0.08), transparent 25%),
+        linear-gradient(180deg, rgba(0,8,38,0.2), transparent 40%);
+      mix-blend-mode: overlay;
+    }
+
+    /* Additional gradient spot */
+    body::after{
+      content: "";
+      position: fixed;
+      inset: auto 0 10% -10%;
+      height: 420px;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(420px 420px at 50% 50%, rgba(0,70,196,0.1), transparent 40%);
+      opacity: 0.9;
+    }
+
+    .container {
+      width: 100%;
+      max-width: var(--site-max);
+      margin: 0 auto;
+      padding: 0 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+    /* ==========================
+       Header - logo centered
+       ========================== */
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo img {
+      height: 72px;
+      display: block;
+      filter: drop-shadow(0 10px 30px rgba(1,83,255,0.12));
+      transition: transform 300ms var(--ease);
+    }
+    .logo img:hover { transform: translateY(-3px); }
+
+    /* ==========================
+       Hero
+       ========================== */
+    .hero {
+      text-align: center;
+      padding: 36px 0 44px;
+    }
+
+    .hero-title {
+      font-size: clamp(28px, 5.4vw, 56px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      text-shadow: 0 6px 30px rgba(1,83,255,0.08);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(16px, 2.1vw, 18px);
+      font-weight: 600;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      max-width: 920px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-tagline { color: var(--muted); font-size:14px; }
+
+    /* ==========================
+       Content grid
+       ========================== */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 36px;
+      align-items: start;
+      margin: 38px 0 64px;
+      z-index: 1;
+    }
+
+    .content-text { padding-right: 18px; }
+    .content-title { color: var(--accent); font-weight:700; margin-bottom: 12px; font-size:18px; }
+    .content-description { color:#cfd8dd; font-size:15px; margin-bottom:10px; line-height:1.7; }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(94,169,226,0.12), transparent);
+      margin: 18px 0;
+    }
+
+    .content-image {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      min-height: 260px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.3));
+    }
+    .content-image img { width:100%; height:100%; object-fit:cover; display:block; }
+
+    /* ==========================
+       Full-bleed announcement + video
+       ========================== */
+    .full-bleed {
+      width: 100%;
+      padding: 40px 0 48px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .video-area {
+      width: 100%;
+      max-width: var(--site-max);
+      padding: 0 22px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+
+    .announcement {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      margin-bottom: 6px;
+      text-align:center;
+    }
+
+    .announcement h2 {
+      font-size: clamp(28px, 6vw, 48px);
+      font-weight:800;
+      margin: 0;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+
+    .announcement .arrow {
+      font-size: 28px; color: var(--accent); line-height:1; animation: floatDown 1600ms ease-in-out infinite;
+    }
+    @keyframes floatDown {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+      100% { transform: translateY(0); }
+    }
+
+    .video-wrapper {
+      width: clamp(520px, 72vw, var(--video-max));
+      aspect-ratio: 16 / 9;
+      position: relative;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: 0 20px 80px rgba(2,31,184,0.16), inset 0 -10px 30px rgba(0,0,0,0.3);
+      background: linear-gradient(180deg, rgba(6,12,24,0.6), rgba(4,8,16,0.6));
+      min-height: 340px;
+    }
+
+    .video-wrapper iframe {
+      position:absolute; inset:0; width:100%; height:100%; border:0; display:block;
+    }
+
+    .video-caption { color:var(--muted); margin-top:12px; font-size:13px; text-align:center; }
+
+    /* ==========================
+       Coming soon form
+       ========================== */
+    .coming-soon {
+      background: linear-gradient(180deg, rgba(6,10,18,0.6), rgba(3,6,12,0.55));
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      margin: 80px auto 140px;
+      width: min(920px, 94%);
+      border: 1px solid rgba(94,169,226,0.06);
+      box-shadow: 0 14px 50px rgba(1,10,30,0.55);
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-title { font-size:28px; color: var(--accent); font-weight:700; margin-bottom:10px; }
+    .form-subtitle { color:var(--muted); margin-bottom: 18px; max-width: 780px; margin-left:auto; margin-right:auto; }
+
+    .subscribe-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: stretch;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .subscribe-form .input {
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font-size: 15px;
+      width: 100%;
+      outline: none;
+      transition: box-shadow 180ms var(--ease), border-color 180ms var(--ease);
+    }
+
+    .subscribe-form .input::placeholder { color: rgba(255,255,255,0.35); }
+    .subscribe-form .input:focus { box-shadow: 0 8px 30px rgba(1,83,255,0.06); border-color: rgba(94,169,226,0.32); }
+
+    .subscribe-form .btn {
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(1,83,255,0.12);
+      width: 100%;
+      max-width: 420px;
+      align-self: center;
+      transition: transform 160ms var(--ease);
+    }
+    .subscribe-form .btn:active { transform: translateY(1px); }
+
+    .subscribe-msg { margin-top: 14px; font-size:14px; color:var(--muted); min-height:20px; }
+
+    /* ==========================
+       Footer
+       ========================== */
+    .footer {
+      margin-top: 80px;
+      padding: 56px 0 80px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.02);
+      background: linear-gradient(180deg, rgba(2,6,12,0.0), rgba(0,0,0,0.03));
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer .footer-logo { display:flex; justify-content:center; margin-bottom: 18px; }
+    .footer .footer-logo img { height:56px; filter: drop-shadow(0 10px 30px rgba(1,83,255,0.06)); }
+    .footer .footer-tagline { color: var(--muted); margin-bottom: 12px; }
+    .social-links { display:flex; justify-content:center; gap: 14px; margin-bottom: 12px; }
+    .social-link { color: var(--text); font-weight:600; text-decoration:none; }
+    .footer-bottom { color: rgba(255,255,255,0.65); margin-top: 8px; font-size:14px; }
+
+    /* Accessibility focus */
+    a:focus, button:focus, input:focus { outline: 3px solid rgba(1,83,255,0.12); outline-offset: 2px; }
+
+    /* ==========================
+       Responsive tweaks
+       ========================== */
+    @media (max-width: 1000px) {
+      .content-grid { grid-template-columns: 1fr; gap: 22px; }
+      .video-wrapper { width: clamp(420px, 86vw, calc(var(--video-max) - 120px)); min-height: 300px; }
+      .coming-soon { margin: 60px auto 120px; padding: 26px; }
+    }
+
+    @media (max-width: 680px) {
+      .hero-title { font-size: 28px; }
+      .announcement h2 { font-size: 28px; }
+      .video-wrapper { width: 94vw; min-height: 220px; border-radius: 14px; }
+      .subscribe-form .btn { max-width: none; width: 100%; }
+      .subscribe-form .input { font-size: 14px; padding: 12px 14px; }
+    }
+
+    @media (max-width: 420px) {
+      .logo img { height: 56px; }
+      .content-image { min-height: 160px; }
+      .video-wrapper { min-height: 200px; }
+      .coming-soon { margin: 36px 12px 80px; padding: 18px; }
+      .footer { padding-bottom: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="sr-only" href="#main">Pular para o conteúdo</a>
+
+  <!-- Header -->
+  <header class="header" role="banner" aria-label="Topo do site">
+    <div class="container">
+      <div class="logo" aria-hidden="false">
+        <img src="images/logo.svg" alt="FreeFitness">
+      </div>
+    </div>
+  </header>
+
+  <main id="main" role="main">
+    <!-- HERO -->
+    <section class="hero container" aria-labelledby="hero-title">
+      <h1 id="hero-title" class="hero-title">Descubra agora!</h1>
+      <p class="hero-subtitle">A primeira academia ao ar livre com estrutura gratuita e acessível</p>
+      <p class="hero-tagline">Uma iniciativa que une saúde, liberdade e comunidade</p>
+    </section>
+
+    <!-- CONTENT GRID -->
+    <section class="container" aria-labelledby="about-title">
+      <div class="content-grid">
+        <div class="content-text" id="about-title">
+          <h3 class="content-title">Ative seu corpo, transforme sua mente</h3>
+          <p class="content-description">
+            A FreeFitness nasceu para revolucionar o conceito de academias ao ar livre,
+            oferecendo equipamentos de alta qualidade gratuitamente para toda a comunidade.
+          </p>
+          <p class="content-description">
+            Nossas estruturas são projetadas para resistir às intempéries e proporcionar uma experiência completa de treino,
+            combinando a praticidade da academia com a liberdade dos espaços abertos.
+          </p>
+          <div class="divider" role="separator" aria-hidden="true"></div>
+          <p class="content-description"><strong>Tudo o que você precisa para elevar seu treino ao ar livre.</strong></p>
+        </div>
+
+        <div class="content-image" aria-hidden="true">
+          <img src="images/aerial_view.jpg" alt="Visão aérea da academia ao ar livre FreeFitness">
+        </div>
+      </div>
+    </section>
+
+    <!-- ANNOUNCEMENT + VIDEO -->
+    <section class="full-bleed" aria-label="Em Breve">
+      <div class="video-area">
+        <div class="announcement" role="heading" aria-level="2">
+          <h2>Em Breve</h2>
+          <div class="arrow" aria-hidden="true">↓</div>
+        </div>
+
+        <div class="video-wrapper" role="region" aria-label="Vídeo de apresentação FreeFitness">
+          <iframe
+            src="https://player.vimeo.com/video/1114404409"
+            title="FreeFitness - Em Breve"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowfullscreen
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+
+        <div class="video-caption">Preview do nosso produto — em breve disponível.</div>
+      </div>
+    </section>
+
+    <!-- COMING SOON FORM -->
+    <section class="container" aria-labelledby="form-title">
+      <div class="coming-soon" role="region" aria-labelledby="form-title">
+        <h2 id="form-title" class="form-title">Participe da nossa comunidade!</h2>
+        <p class="form-subtitle">Inscreva-se para ser notificado quando lançarmos e receber novidades exclusivas</p>
+
+        <form id="subscribeForm" class="subscribe-form" action="#" method="post" novalidate aria-describedby="subscribeMessage">
+          <input id="nomeInput" name="nome" class="input" type="text" placeholder="Seu nome" aria-label="Seu nome" required>
+          <input id="emailInput" name="email" class="input" type="email" placeholder="Seu email" aria-label="Seu email" required>
+          <input id="telefoneInput" name="telefone" class="input" type="tel" inputmode="numeric" placeholder="Telefone (apenas números)" aria-label="Telefone (apenas números)">
+          <button id="notifyBtn" class="btn" type="submit" aria-live="polite">Notificar-me</button>
+        </form>
+
+        <div id="subscribeMessage" class="subscribe-msg" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-logo">
+        <img src="images/logo.svg" alt="FreeFitness Logo">
+      </div>
+      <div class="footer-tagline">Ative seu corpo, transforme sua mente</div>
+      <div class="social-links">
+        <a class="social-link" href="#" aria-label="Instagram FreeFitness">@FREEFITNESS.LIFE</a>
+      </div>
+      <div class="footer-bottom">© 2025 FreeFitness. Todos os direitos reservados.</div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT: Supabase connection ONLY - NO LOCAL STORAGE -->
+  <script>
+    // SUPABASE CONFIG
+    const SUPABASE_URL = 'https://wcwybxxcwghypkwhajnl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3lieHhjd2doeXBrd2hham5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MDkzNTEsImV4cCI6MjA3MjA4NTM1MX0.we7feXNEnubGtfHSAHTag1-JkaLtN11Y3CATaE0nlVw';
+
+    // Initialize Supabase client
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('subscribeForm');
+      const nameInput = document.getElementById('nomeInput');
+      const emailInput = document.getElementById('emailInput');
+      const phoneInput = document.getElementById('telefoneInput');
+      const messageBox = document.getElementById('subscribeMessage');
+      const submitBtn = document.getElementById('notifyBtn');
+
+      // Phone number validation - only numbers
+      phoneInput.addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/\D/g, '');
+      });
+
+      // Form submission handler
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Reset message
+        messageBox.textContent = '';
+        messageBox.style.color = '';
+        
+        // Get form values
+        const nome = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const telefone = phoneInput.value.replace(/\D/g, '');
+        
+        // Validation
+        if (!nome) {
+          showMessage('Informe seu nome.', 'error');
+          nameInput.focus();
+          return;
+        }
+        
+        if (!isValidEmail(email)) {
+          showMessage('Informe um e-mail válido.', 'error');
+          emailInput.focus();
+          return;
+        }
+        
+        if (telefone && (telefone.length < 10 || telefone.length > 15)) {
+          showMessage('Número de telefone inválido (10-15 dígitos).', 'error');
+          phoneInput.focus();
+          return;
+        }
+        
+        // Disable button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+        
+        try {
+          // Insert data into Supabase
+          const { data, error } = await supabaseClient
+            .from('gym')
+            .insert([{ nome, email, telefone: telefone || null }]);
+          
+          if (error) {
+            throw error;
+          }
+          
+          // Success message
+          showMessage('Obrigado! Você foi cadastrado com sucesso. Entraremos em contato em breve.', 'success');
+          form.reset();
+        } catch (error) {
+          console.error('Erro ao salvar dados:', error);
+          showMessage('Erro ao conectar com o servidor. Por favor, tente novamente.', 'error');
+        } finally {
+          // Re-enable button
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Notificar-me';
+        }
+      });
+      
+      // Helper functions
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+      
+      function showMessage(text, type) {
+        messageBox.textContent = text;
+        messageBox.style.color = type === 'error' ? '#ff6b6b' : '#5ea9e2';
+      }
+    });
+  </script>
+</body>
+</html>
